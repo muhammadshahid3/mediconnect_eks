@@ -22,7 +22,7 @@ spec:
 
         - name: backend
 
-          image: shahiddevops1/mediconnect-backend
+          image: shahiddevops1/mediconnect-backend:latest
           imagePullPolicy: Always
 
           ports:
