@@ -54,7 +54,7 @@ const Landing = () => {
               Find the right doctor. Book in minutes.
             </h1>
             <p className="mt-5 text-teal-100/90 text-lg max-w-lg">
-              MediConnect sshahid sab you with verified, experienced doctors across specializations —
+              MediConnect matches you with verified, experienced doctors across specializations —
               then handles the scheduling, so you can focus on getting well.
             </p>
 
