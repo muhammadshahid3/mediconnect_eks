@@ -10,8 +10,6 @@ MediConnect is a full-stack MERN application that connects patients with doctors
 - [Tech Stack](#tech-stack)
 - [Folder Structure](#folder-structure)
 - [Getting Started](#getting-started)
-  - [Option A: Run with Docker Compose (recommended)](#option-a-run-with-docker-compose-recommended)
-  - [Option B: Run locally without Docker](#option-b-run-locally-without-docker)
 - [Environment Variables](#environment-variables)
 - [API Documentation](#api-documentation)
 - [Production Deployment on AWS EKS](#production-deployment-on-aws-eks)
@@ -55,7 +53,7 @@ MediConnect is a full-stack MERN application that connects patients with doctors
 - JWT authentication with role-based route protection (doctor vs. patient)
 - Passwords hashed with bcrypt, never returned by the API
 - Toast notifications, loading spinners, and empty/error states throughout
-- Dockerized: React (nginx) + Node/Express + MongoDB, orchestrated with Docker Compose
+- Dockerized: React (nginx) + Node/Express + MongoDB, deployed to production on AWS EKS (Kubernetes)
 
 ---
 
@@ -69,7 +67,8 @@ MediConnect is a full-stack MERN application that connects patients with doctors
 | Authentication | JSON Web Tokens (JWT)               |
 | Password Hash  | bcrypt (bcryptjs)                   |
 | File Upload    | Multer (doctor profile images)      |
-| Containerization | Docker, Docker Compose            |
+| Containerization | Docker                              |
+| Orchestration    | Kubernetes on AWS EKS (Deployments, StatefulSet, HPA, Ingress/ALB) |
 
 ---
 
@@ -96,12 +95,30 @@ mediconnect/
 │   ├── routes/                   # doctorRoutes, patientRoutes, appointmentRoutes
 │   ├── middleware/                # authMiddleware (JWT + roles), uploadMiddleware (Multer), errorMiddleware
 │   ├── utils/generateToken.js
-│   ├── uploads/                  # doctor profile images (persisted via Docker volume)
+│   ├── uploads/                  # doctor profile images (persisted via a PersistentVolume in production)
 │   ├── server.js
 │   ├── Dockerfile
 │   └── package.json
 │
-├── docker-compose.yml
+├── kubernates/                  # Kubernetes manifests used to deploy to AWS EKS
+│   ├── namespace.yaml            # mediconnect namespace
+│   ├── backend/
+│   │   ├── backend.yaml          # Deployment
+│   │   ├── configmap.yaml        # non-secret env vars (NODE_ENV, PORT, CLIENT_URL, ...)
+│   │   ├── hpa.yaml               # HorizontalPodAutoscaler (CPU + memory)
+│   │   └── service.yaml           # ClusterIP service
+│   ├── frontend/
+│   │   ├── deployment.yaml        # Deployment
+│   │   ├── hpa.yaml                # HorizontalPodAutoscaler (CPU)
+│   │   └── service.yaml            # ClusterIP service
+│   ├── ingress/
+│   │   ├── iam_policy.json         # IAM policy for the AWS Load Balancer Controller
+│   │   └── ingress.yaml            # ALB Ingress (routes / to frontend, /api to backend)
+│   └── mongodb/
+│       ├── gp3-storageclass.yaml   # EBS gp3 StorageClass
+│       ├── service.yaml             # Headless service for the StatefulSet
+│       └── statefulset.yaml         # MongoDB StatefulSet + PVC template
+│
 └── README.md
 ```
 
@@ -109,39 +126,7 @@ mediconnect/
 
 ## Getting Started
 
-### Option A: Run with Docker Compose (recommended)
-
-**Prerequisites:** Docker and Docker Compose installed.
-
-1. From the project root, optionally create a `.env` file to override defaults used by `docker-compose.yml`:
-
-   ```bash
-   JWT_SECRET=replace_with_a_long_random_secret
-   VITE_API_URL=http://localhost:5000/api
-   ```
-
-2. Build and start everything:
-
-   ```bash
-   docker compose up --build
-   ```
-
-3. Open the app:
-   - Frontend: [http://localhost:5173](http://localhost:5173)
-   - Backend API: [http://localhost:5000/api](http://localhost:5000/api)
-   - MongoDB: exposed on `localhost:27017` if you want to inspect it with a GUI client
-
-4. To stop everything:
-
-   ```bash
-   docker compose down
-   ```
-
-   Add `-v` to also remove the MongoDB and uploads volumes (this deletes all data).
-
-> **Note on file uploads in Docker:** doctor profile images are stored in a named volume (`uploads_data`) mounted at `/app/uploads` in the server container, so they persist across restarts.
-
-### Option B: Run locally without Docker
+Run the app locally with Node.js and a MongoDB instance. For the production setup, see [Production Deployment on AWS EKS](#production-deployment-on-aws-eks) below.
 
 **Prerequisites:** Node.js 18+, npm, and a running MongoDB instance (local or Atlas).
 
