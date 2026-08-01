@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: shahiddevops1/mediconnect-client:latest 
+          image: shahiddevops1/mediconnect-client 
           imagePullPolicy: IfNotPresent 
           ports:
             - containerPort: 80
