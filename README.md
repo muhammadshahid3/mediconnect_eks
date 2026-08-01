@@ -30,6 +30,8 @@ MediConnect is a full-stack MERN application that connects patients with doctors
 
 ---
 
+![App Dashboard](main.png)
+
 ## Features
 
 **Landing Page**

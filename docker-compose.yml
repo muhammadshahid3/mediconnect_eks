@@ -13,9 +13,7 @@ services:
       - mediconnect-network
 
   server:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
+    image: shahiddevops1/mediconnect-backend:latest
     container_name: mediconnect-server
     restart: unless-stopped
     ports:
@@ -35,11 +33,7 @@ services:
       - mediconnect-network
 
   client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:5000/api}
+    image: shahiddevops1/mediconnect-frontend:latest
     container_name: mediconnect-client
     restart: unless-stopped
     ports:
