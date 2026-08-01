@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout
+      # Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -32,8 +32,7 @@ jobs:
         with:
           context: ./client
           push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-frontend:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-frontend:latest
 
       # Build & Push Backend
       - name: Build and Push Backend
@@ -41,8 +40,7 @@ jobs:
         with:
           context: ./server
           push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-backend:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-backend:latest
 
       # AWS Credentials
       - name: Configure AWS Credentials
@@ -58,60 +56,37 @@ jobs:
         with:
           version: latest
 
-      # Install eksctl (optional)
-      - name: Install eksctl
-        run: |
-          curl --silent --location \
-          "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" \
-          | tar xz
-          sudo mv eksctl /usr/local/bin
-
-      # Show AWS Identity
+      # Verify AWS Identity
       - name: AWS Identity
-        run: |
-          aws sts get-caller-identity
+        run: aws sts get-caller-identity
 
       # Configure kubeconfig
       - name: Configure kubeconfig
         run: |
           aws eks update-kubeconfig \
-            --name $CLUSTER_NAME \
-            --region $AWS_REGION
+            --region $AWS_REGION \
+            --name $CLUSTER_NAME
 
-      # Debug
-      - name: Debug kubeconfig
+      # Verify Cluster Access
+      - name: Verify Cluster
         run: |
-          kubectl version --client
           kubectl config current-context
-          cat ~/.kube/config
-
-      # Test Cluster Access
-      - name: Test Cluster
-        run: |
-          kubectl get ns
+          kubectl cluster-info
           kubectl get nodes
+          kubectl get ns
 
       # Restart Frontend
       - name: Restart Frontend
         run: |
-          kubectl rollout restart deployment/frontend -n $NAMESPACE
+          kubectl rollout restart deployment frontend -n $NAMESPACE
+          kubectl rollout status deployment frontend -n $NAMESPACE --timeout=300s
 
       # Restart Backend
       - name: Restart Backend
         run: |
-          kubectl rollout restart deployment/backend -n $NAMESPACE
+          kubectl rollout restart deployment backend -n $NAMESPACE
+          kubectl rollout status deployment backend -n $NAMESPACE --timeout=300s
 
-      # Wait Frontend
-      - name: Wait Frontend
-        run: |
-          kubectl rollout status deployment/frontend -n $NAMESPACE --timeout=300s
-
-      # Wait Backend
-      - name: Wait Backend
-        run: |
-          kubectl rollout status deployment/backend -n $NAMESPACE --timeout=300s
-
-      # Show Pods
+      # Verify Pods
       - name: Verify Pods
-        run: |
-          kubectl get pods -n $NAMESPACE
+        run: kubectl get pods -n $NAMESPACE
