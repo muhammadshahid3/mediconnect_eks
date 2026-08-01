@@ -26,7 +26,7 @@ jobs:
       with:
         context: ./client # Client folder ka path
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-client:latest
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-frontend:latest
 
     # 4. Server Image Build aur Push
     - name: Build & Push Server
@@ -34,4 +34,4 @@ jobs:
       with:
         context: ./server # Server folder ka path
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-server:latest
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-backend:latest
