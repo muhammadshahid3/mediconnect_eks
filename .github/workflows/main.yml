@@ -5,13 +5,18 @@ on:
     branches:
       - main
 
+env:
+  AWS_REGION: ap-south-1
+  CLUSTER_NAME: mediconnect-cluster
+  NAMESPACE: mediconnect
+
 jobs:
   build-push-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout Repository
-      - name: Checkout Code
+      # Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       # Docker Hub Login
@@ -27,7 +32,8 @@ jobs:
         with:
           context: ./client
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-frontend:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-frontend:latest
 
       # Build & Push Backend
       - name: Build and Push Backend
@@ -35,15 +41,16 @@ jobs:
         with:
           context: ./server
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-backend:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/mediconnect-backend:latest
 
-      # Configure AWS Credentials
+      # AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+          aws-region: ${{ env.AWS_REGION }}
 
       # Install kubectl
       - name: Install kubectl
@@ -51,8 +58,16 @@ jobs:
         with:
           version: latest
 
-      # Verify AWS Identity
-      - name: Verify AWS Identity
+      # Install eksctl (optional)
+      - name: Install eksctl
+        run: |
+          curl --silent --location \
+          "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" \
+          | tar xz
+          sudo mv eksctl /usr/local/bin
+
+      # Show AWS Identity
+      - name: AWS Identity
         run: |
           aws sts get-caller-identity
 
@@ -60,24 +75,43 @@ jobs:
       - name: Configure kubeconfig
         run: |
           aws eks update-kubeconfig \
-            --region ap-south-1 \
-            --name mediconnect-cluster
+            --name $CLUSTER_NAME \
+            --region $AWS_REGION
 
-      # Debug Cluster Connection
-      - name: Verify Cluster Access
+      # Debug
+      - name: Debug kubeconfig
         run: |
+          kubectl version --client
           kubectl config current-context
-          kubectl cluster-info
+          cat ~/.kube/config
+
+      # Test Cluster Access
+      - name: Test Cluster
+        run: |
+          kubectl get ns
           kubectl get nodes
 
-      # Restart Deployments
-      - name: Restart Kubernetes Deployments
+      # Restart Frontend
+      - name: Restart Frontend
         run: |
-          kubectl rollout restart deployment/frontend -n mediconnect
-          kubectl rollout restart deployment/backend -n mediconnect
+          kubectl rollout restart deployment/frontend -n $NAMESPACE
 
-      # Wait for Rollout
-      - name: Verify Rollout
+      # Restart Backend
+      - name: Restart Backend
         run: |
-          kubectl rollout status deployment/frontend -n mediconnect --timeout=180s
-          kubectl rollout status deployment/backend -n mediconnect --timeout=180s
+          kubectl rollout restart deployment/backend -n $NAMESPACE
+
+      # Wait Frontend
+      - name: Wait Frontend
+        run: |
+          kubectl rollout status deployment/frontend -n $NAMESPACE --timeout=300s
+
+      # Wait Backend
+      - name: Wait Backend
+        run: |
+          kubectl rollout status deployment/backend -n $NAMESPACE --timeout=300s
+
+      # Show Pods
+      - name: Verify Pods
+        run: |
+          kubectl get pods -n $NAMESPACE
