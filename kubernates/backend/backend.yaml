@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: backend
+  namespace: mediconnect
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: backend
+
+  template:
+    metadata:
+      labels:
+        app: backend
+
+    spec:
+      containers:
+
+        - name: backend
+
+          image: shahiddevops1/mediconnect-server
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 5000
+
+
+          # ConfigMap + Secret
+          envFrom:
+
+            - configMapRef:
+                name: mediconnect-config
+
+            - secretRef:
+                name: mediconnect-secret
+
+
+          resources:
+
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+
+          livenessProbe:
+
+            tcpSocket:
+              port: 5000
+
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+
+          readinessProbe:
+
+            tcpSocket:
+              port: 5000
+
+            initialDelaySeconds: 10
+            periodSeconds: 5

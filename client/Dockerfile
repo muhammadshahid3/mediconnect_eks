@@ -8,10 +8,7 @@ RUN npm install
 
 COPY . .
 
-# The API URL is baked in at build time (Vite env vars are compile-time)
-ARG VITE_API_URL=http://localhost:5000/api
-ENV VITE_API_URL=$VITE_API_URL
-
+# Build React/Vite app
 RUN npm run build
 
 # --- Production stage ---

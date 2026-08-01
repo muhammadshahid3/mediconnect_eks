@@ -30,7 +30,7 @@ const DoctorLogin = () => {
   return (
     <div className="section py-20 max-w-md mx-auto">
       <div className="card p-8">
-        <span className="eyebrow">Doctor</span>
+        <span className="eyebrow">Doctor shahid sahb</span>
         <h1 className="text-2xl font-extrabold text-ink mt-1 mb-6">Welcome back</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
